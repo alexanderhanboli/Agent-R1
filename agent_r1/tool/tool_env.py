@@ -428,8 +428,21 @@ For each function call, return a json object with function name and arguments wi
     def copy(self):
         """
         Copy the tool environment
+        
+        Creates new instances of stateful tools (like PythonTool) while reusing stateless tools
         """
-        env = ToolEnv(tools=self.tools, max_turns=self.max_turns)
+        # Create new instances of stateful tools, reuse stateless ones
+        new_tools = []
+        for tool in self.tools:
+            if tool.__class__.__name__ == 'PythonTool':
+                # Create a fresh instance of PythonTool
+                # Python code execution in one environment won't affect the state of Python variables in other environments
+                new_tools.append(tool.__class__())
+            else:
+                # Reuse stateless tools
+                new_tools.append(tool)
+                
+        env = ToolEnv(tools=new_tools, max_turns=self.max_turns)
         env.tool_history = deepcopy(self.tool_history)
         env.rewards = deepcopy(self.rewards)
         env.steps_taken = self.steps_taken
