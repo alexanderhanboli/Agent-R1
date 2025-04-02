@@ -213,4 +213,4 @@ tool:
     </tool_response><|im_end|>
     <|im_start|>assistant
     <think>
-  env: search
+  env: all

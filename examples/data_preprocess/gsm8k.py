@@ -15,6 +15,7 @@
 Preprocess the GSM8k dataset to parquet format
 """
 
+import json
 import re
 import os
 import datasets
@@ -103,6 +104,9 @@ Output format for answer:
 
     # train_dataset = train_dataset.select(range(64))
     test_dataset = test_dataset.select(range(100))
+
+    # pretty print a json of one item
+    print(json.dumps(train_dataset[0], indent=4))
 
     local_dir = args.local_dir
     hdfs_dir = args.hdfs_dir

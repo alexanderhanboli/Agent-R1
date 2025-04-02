@@ -1,19 +1,28 @@
 export VLLM_ATTENTION_BACKEND=XFORMERS
 export BASE_MODEL='Qwen/Qwen2.5-1.5B-Instruct'
-export PROJECT_NAME='hotpotqa_qwen2.5-1.5b-instruct'
 export EXPERIMENT_NAME=grpo
 export HYDRA_FULL_ERROR=1
 export CUDA_LAUNCH_BLOCKING=1
+# set available gpus
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+# calculate the number of gpus
+export NUM_GPUS=$(echo $CUDA_VISIBLE_DEVICES | tr ',' '\n' | wc -l)
+# dataset name
+export DATASET_NAME='gsm8k'
+# Sanitize the base model name by replacing forward slashes with underscores
+export SANITIZED_MODEL_NAME=$(echo $BASE_MODEL | tr '/' '_')
+export PROJECT_NAME=${DATASET_NAME}_${SANITIZED_MODEL_NAME}_grpo
+
 
 python3 -m agent_r1.src.main_agent \
     algorithm.adv_estimator=grpo \
-    data.train_files=./data/hotpotqa/train.parquet \
-    data.val_files=./data/hotpotqa/validation.parquet \
-    data.train_batch_size=128 \
-    data.max_prompt_length=4096 \
-    data.max_response_length=4096 \
-    data.max_start_length=4096 \
-    data.max_tool_response_length=4096 \
+    data.train_files=./data/${DATASET_NAME}/train.parquet \
+    data.val_files=./data/${DATASET_NAME}/test.parquet \
+    data.train_batch_size=1024 \
+    data.max_prompt_length=512 \
+    data.max_response_length=2048 \
+    data.max_start_length=256 \
+    data.max_tool_response_length=2048 \
     actor_rollout_ref.model.path=$BASE_MODEL \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.model.use_remove_padding=True \
@@ -37,9 +46,9 @@ python3 -m agent_r1.src.main_agent \
     trainer.logger=['console','wandb'] \
     trainer.project_name=$PROJECT_NAME \
     trainer.experiment_name=$EXPERIMENT_NAME \
-    trainer.n_gpus_per_node=8 \
+    trainer.n_gpus_per_node=$NUM_GPUS \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
     trainer.test_freq=10 \
-    trainer.total_epochs=1 \
-    tool.env='search' $@
+    trainer.total_epochs=30 \
+    tool.env='python' $@
