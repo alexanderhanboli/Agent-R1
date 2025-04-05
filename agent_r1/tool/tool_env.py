@@ -168,7 +168,7 @@ def step_batch(envs: List['ToolEnv'], action_texts: List[str]):
                 reward=env.PENALTY_FOR_INEFFECTIVE  # Semantic error penalty
             )
             results[i] = (result, env.PENALTY_FOR_INEFFECTIVE, False, {"action_is_valid": True, "action_is_effective": False})
-            print(f"[WARNING] Unknown tool: {result}")
+            print(f"[WARNING] Unknown tool: {result}; extracted from: {action_text}")
             continue
             
         # Get tool instance

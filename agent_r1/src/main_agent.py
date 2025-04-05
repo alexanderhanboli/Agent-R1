@@ -90,9 +90,9 @@ class RewardManager():
 
             if already_print_data_sources[data_source] < self.num_examine:
                 already_print_data_sources[data_source] += 1
-                print("[prompt+response]", sequences_str)
-                print("[ground_truth]", ground_truth)
-                print("[score]", score)
+                print("=======>[prompt+response]", sequences_str)
+                print("=======>[ground_truth]", ground_truth)
+                print("=======>[score]", score)
 
         return reward_tensor, answer_lst, format_lst
 
@@ -195,7 +195,7 @@ def main_task(config):
                             resource_pool_manager=resource_pool_manager,
                             ray_worker_group_cls=ray_worker_group_cls,
                             reward_fn=RewardManager(tokenizer=tokenizer, num_examine=0),
-                            val_reward_fn=RewardManager(tokenizer=tokenizer, num_examine=1),
+                            val_reward_fn=RewardManager(tokenizer=tokenizer, num_examine=2),
                             env=env)
     trainer.init_workers()
     trainer.fit()

@@ -11,7 +11,10 @@ export NUM_GPUS=$(echo $CUDA_VISIBLE_DEVICES | tr ',' '\n' | wc -l)
 export DATASET_NAME='gsm8k'
 # Sanitize the base model name by replacing forward slashes with underscores
 export SANITIZED_MODEL_NAME=$(echo $BASE_MODEL | tr '/' '_')
-export PROJECT_NAME=${DATASET_NAME}_${SANITIZED_MODEL_NAME}_grpo
+# define tool
+export TOOL="python"
+# define used project name
+export PROJECT_NAME=${DATASET_NAME}_${SANITIZED_MODEL_NAME}_${TOOL}_grpo
 
 
 python3 -m agent_r1.src.main_agent \
@@ -19,9 +22,9 @@ python3 -m agent_r1.src.main_agent \
     data.train_files=./data/${DATASET_NAME}/train.parquet \
     data.val_files=./data/${DATASET_NAME}/test.parquet \
     data.train_batch_size=1024 \
-    data.max_prompt_length=512 \
+    data.max_prompt_length=1024 \
     data.max_response_length=2048 \
-    data.max_start_length=256 \
+    data.max_start_length=1024 \
     data.max_tool_response_length=2048 \
     actor_rollout_ref.model.path=$BASE_MODEL \
     actor_rollout_ref.actor.optim.lr=1e-6 \
@@ -51,4 +54,4 @@ python3 -m agent_r1.src.main_agent \
     trainer.save_freq=-1 \
     trainer.test_freq=10 \
     trainer.total_epochs=30 \
-    tool.env='python' $@
+    tool.env=$TOOL $@

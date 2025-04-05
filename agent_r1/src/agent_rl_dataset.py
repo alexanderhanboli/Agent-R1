@@ -103,6 +103,7 @@ class ToolRLDataset(RLHFDataset):
         chat = row_dict.pop(self.prompt_key)
 
         if self.use_custom_tool_format_func:
+            # print("Using custom tool format function")
             if chat[0]['role'] == 'system':
                 chat[0]['content'] = chat[0]['content'] + self.tool_env.tools_format_func()
             else:
@@ -112,7 +113,11 @@ class ToolRLDataset(RLHFDataset):
                 chat = system_msg + chat_list
             prompt_with_chat_template = self.tokenizer.apply_chat_template(chat, add_generation_prompt=True, tokenize=False)
         else:
+            # print("Using default tool format function")
             prompt_with_chat_template = self.tokenizer.apply_chat_template(chat, tools=self.tools, add_generation_prompt=True, tokenize=False)
+
+        # print out the prompt_with_chat_template
+        # print(prompt_with_chat_template)
 
         is_multi_modal = self.image_key in row_dict
         if is_multi_modal:  # expand image token

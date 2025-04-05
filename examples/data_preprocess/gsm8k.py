@@ -23,6 +23,8 @@ import datasets
 from verl.utils.hdfs_io import copy, makedirs
 import argparse
 
+from agent_r1.tool.tools import _default_tools
+
 
 def extract_solution(solution_str):
     solution = re.search("#### (\\-?[0-9\\.\\,]+)", solution_str)
@@ -34,7 +36,7 @@ def extract_solution(solution_str):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--local_dir', default='~/data/gsm8k')
+    parser.add_argument('--local_dir', default='./data/gsm8k')
     parser.add_argument('--hdfs_dir', default=None)
 
     args = parser.parse_args()
@@ -46,25 +48,17 @@ if __name__ == '__main__':
     train_dataset = dataset['train']
     test_dataset = dataset['test']
 
-    instruction_following = """You can use the tools provided to you to answer the question. You can use the tool as many times as you want.
-You must first conduct reasoning inside <think>...</think>. If you need to use the tool, you can use the tool call <tool_call>...</tool_call> to call the tool after <think>...</think>.
-When you have the final answer, you can output the answer inside <answer>...</answer>.
+    instruction_following = """For any assistant response, please always first conduct reasoning within <think></think> XML tags.
 
-Output format for tool call:
-<think>
-...
-</think>
-<tool_call>
-...
-</tool_call>
+If it is necessary to use any tool, you should put the function name and arguments within <tool_call></tool_call> XML tags. You can only use the tools provided to you. For example:
+<think> [Your reasoning here] </think>
+<tool_call> [Function name and arguments] </tool_call>
 
-Output format for answer:
-<think>
-...
-</think>
-<answer>
-...
-</answer>
+Otherwise, if you are ready to output your answer, please put it inside <answer></answer> XML tags. In your answer, put the final numerical solution in \\boxed{...}. For example:
+<think> [Your reasoning here] </think>
+<answer> Alex has 10 apples, and he gives 2 to his friend, so he has \\boxed{8} apples left. </answer>
+
+Now, follow the above instructions to answer the following question:
 """
 
     # add a row to each data item that represents a unique id
@@ -73,13 +67,14 @@ Output format for answer:
         def process_fn(example, idx):
             question_raw = example.pop('question')
 
-            question = question_raw + ' ' + instruction_following
+            question = instruction_following + question_raw
 
             answer_raw = example.pop('answer')
             solution = extract_solution(answer_raw)
             data = {
                 "data_source": data_source,
-                "prompt": [{
+                "prompt": [
+                {
                     "role": "user",
                     "content": question,
                 }],
@@ -116,5 +111,40 @@ Output format for answer:
 
     if hdfs_dir is not None:
         makedirs(hdfs_dir)
-
         copy(src=local_dir, dst=hdfs_dir)
+
+    # Example of how the processed data is used with ToolRLDataset
+    print("\nDemonstrating how the processed data is used with ToolRLDataset:")
+    print("-" * 80)
+    
+    from agent_r1.src.agent_rl_dataset import ToolRLDataset
+    from transformers import AutoTokenizer
+    from agent_r1.tool.tool_env import ToolEnv
+    
+    # Initialize tokenizer and tool environment
+    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-1.5B-Instruct")
+    tool_env = ToolEnv(tools=_default_tools(['python']))
+    
+    # Create dataset using the processed parquet file
+    dataset = ToolRLDataset(
+        parquet_files=os.path.join(local_dir, 'train.parquet'),
+        tokenizer=tokenizer,
+        prompt_key="prompt",
+        max_prompt_length=2048,
+        tool_env=tool_env
+    )
+    
+    # Get first item and show the tokenized output
+    print("\nExample of first item after processing through ToolRLDataset:")
+    item = dataset[0]
+    decoded = tokenizer.decode(item['input_ids'])
+    print("\nDecoded tokenized input:")
+    print("-" * 80)
+    print(decoded)
+    print("-" * 80)
+    
+    # Print attention mask shape and other relevant info
+    print("\nInput shapes:")
+    print(f"input_ids shape: {item['input_ids'].shape}")
+    print(f"attention_mask shape: {item['attention_mask'].shape}")
+    print(f"position_ids shape: {item['position_ids'].shape}")
