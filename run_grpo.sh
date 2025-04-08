@@ -12,9 +12,9 @@ export DATASET_NAME='gsm8k'
 # Sanitize the base model name by replacing forward slashes with underscores
 export SANITIZED_MODEL_NAME=$(echo $BASE_MODEL | tr '/' '_')
 # define tool
-export TOOL="python"
+export TOOL="calculator"
 # define used project name
-export PROJECT_NAME=${DATASET_NAME}_${SANITIZED_MODEL_NAME}_${TOOL}_grpo
+export PROJECT_NAME=${DATASET_NAME}_${SANITIZED_MODEL_NAME}_${TOOL}_grpo_0.8_0.2
 
 
 python3 -m agent_r1.src.main_agent \

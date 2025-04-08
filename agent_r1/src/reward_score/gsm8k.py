@@ -15,6 +15,9 @@
 import re
 
 def answer_check(solution_str, ground_truth):
+    if not solution_str or not ground_truth:
+        return False
+    
     # find the last number in the solution string 
     answer = re.findall(r'-?\d+\.?\d*', solution_str)
     if answer:
@@ -28,12 +31,26 @@ def answer_check(solution_str, ground_truth):
         return False
 
 def extract_solution(solution_str):
-    """Extract the answer from the solution string, looking for \boxed{} content."""
-    boxed_pattern = r'\\boxed{(.*?)}'
-    match = re.search(boxed_pattern, solution_str, re.DOTALL)
+    """Extract the answer from the solution string, looking for content within <answer> tags and \boxed{} content."""
+    if solution_str is None:
+        return None
     
-    if match:
-        return match.group(1).strip()
+    # First find content within <answer> tags
+    answer_pattern = r'<answer>(.*?)</answer>'
+    answer_match = re.search(answer_pattern, solution_str, re.DOTALL)
+    
+    if not answer_match:
+        return None
+    
+    answer_content = answer_match.group(1).strip()
+    
+    # Then find \boxed{} content within the answer tags
+    boxed_pattern = r'\\boxed{(.*?)}'
+    boxed_match = re.search(boxed_pattern, answer_content, re.DOTALL)
+    
+    if boxed_match:
+        return boxed_match.group(1).strip()
+    
     return None
 
 def compute_score_format(solution_str):
@@ -115,7 +132,7 @@ def compute_score_answer(solution_str, ground_truth):
             if answer_check(answer, ground_truth):
                 answer_reward = 1.0
     except Exception as e:
-        print(f"[DEBUG] solution_str: {solution_str}")
+        # print(f"[DEBUG] solution_str: {solution_str}")
         print(f"[DEBUG] Error in compute_score_answer: {e}")
         return 0.0
     
@@ -136,10 +153,12 @@ def compute_score_format_answer(solution_str, ground_truth):
         answer_reward = compute_score_answer(solution_str, ground_truth)
 
         format_reward = min(format_reward, 1.0)
-        if format_reward == 1.0:
-            return -1.0 + format_reward + answer_reward
-        else:
-            return -1.0 + format_reward
+
+        return 0.8 * answer_reward + 0.2 * format_reward
+        # if format_reward == 1.0:
+        #     return -1.0 + format_reward + answer_reward
+        # else:
+        #     return -1.0 + format_reward
     except Exception as e:
         print(f"[DEBUG] Error in compute_score_format_answer: {e}")
         return 0.0
